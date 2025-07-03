@@ -15,7 +15,7 @@ import autoupdate
 import os
 
 repo_url = "https://github.com/Veitners/Luna-reader"
-current_version = "0.0.2"  # Replace with your current version
+current_version = "0.0.5"  # Replace with your current version
 
 def check_for_updates():
     """Checks for updates and prompts the user."""

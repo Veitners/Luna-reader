@@ -42,6 +42,9 @@ def check_for_update(repo_url, current_version):
 def download_and_extract_update(repo_url, latest_version, extract_to):
     """Downloads and extracts the latest update from GitHub."""
     try:
+        # Ensure the extract_to directory exists
+        os.makedirs(extract_to, exist_ok=True)
+
         zip_url = f"{repo_url}/archive/refs/tags/{latest_version}.zip"
         response = requests.get(zip_url, stream=True, timeout=10)
         response.raise_for_status()
@@ -51,8 +54,12 @@ def download_and_extract_update(repo_url, latest_version, extract_to):
             for chunk in response.iter_content(chunk_size=8192):
                 zip_file.write(chunk)
 
+        # Extract files into a subdirectory named after the version
+        version_folder = os.path.join(extract_to, f"repo-{latest_version}")
+        os.makedirs(version_folder, exist_ok=True)
+
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            zip_ref.extractall(extract_to)
+            zip_ref.extractall(version_folder)
 
         os.remove(zip_path)
         return True
@@ -68,12 +75,12 @@ def apply_update(update_folder, target_folder):
             d = os.path.join(target_folder, item)
             if os.path.isdir(s):
                 if os.path.exists(d):
-                    shutil.rmtree(d)
-                shutil.copytree(s, d)
+                    shutil.rmtree(d)  # Remove the existing directory
+                shutil.copytree(s, d)  # Copy the new directory
             else:
-                shutil.copy2(s, d)
+                shutil.copy2(s, d)  # Overwrite the file
 
-        shutil.rmtree(update_folder)
+        shutil.rmtree(update_folder)  # Clean up the update folder
         messagebox.showinfo("Info", "Update applied successfully!")
     except OSError as e:
         messagebox.showerror("Error", f"Failed to apply update: {e}")

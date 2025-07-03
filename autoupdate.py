@@ -86,3 +86,6 @@ def prompt_update(current_version, extract_to, target_folder, repo_url="https://
             update_folder = os.path.join(extract_to, f"repo-{latest_version}")
             if download_and_extract_update(repo_url, latest_version, extract_to):
                 apply_update(update_folder, target_folder)
+                messagebox.showinfo("Update Complete", "The application has been updated successfully. Please restart the application.")
+            else:
+                messagebox.showerror("Update Failed", "Failed to download or apply the update.")

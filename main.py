@@ -15,11 +15,13 @@ import autoupdate
 import os
 
 repo_url = "https://github.com/Veitners/Luna-reader"
-current_version = "0.0.2"  # Replace with your current version
+current_version = "0.0.3"  # Replace with your current version
 
 def check_for_updates():
     """Checks for updates and prompts the user."""
-    autoupdate.check_for_update(repo_url, current_version)
+    extract_to = os.path.join(os.getcwd(), "updates")
+    target_folder = os.getcwd()
+    autoupdate.prompt_update(current_version, extract_to, target_folder)
 
 class DeformationApp:
     """Main application class for viewing"""

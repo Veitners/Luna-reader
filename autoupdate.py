@@ -11,12 +11,30 @@ def check_for_update(repo_url, current_version):
             raise ValueError("Invalid URL format. Ensure the URL starts with 'http://' or 'https://'.")
 
         response = requests.get(f"{repo_url}/releases/latest", timeout=10)
+        if response.status_code == 404:
+            messagebox.showinfo("Info", "No updates available. No releases found.")
+            return None
+
         response.raise_for_status()
         latest_version = response.url.split("/")[-1]
 
+        # Ensure the latest version is a valid number
+        if not latest_version.replace('.', '').isdigit():
+            messagebox.showerror("Error", "Invalid version format retrieved from GitHub.")
+            return None
+
         if latest_version != current_version:
+            messagebox.showinfo(
+                "Update Check",
+                f"Current Version: {current_version}\nLatest Version: {latest_version}\n\nUpdate available!"
+            )
             return latest_version
-        return None
+        else:
+            messagebox.showinfo(
+                "Update Check",
+                f"Current Version: {current_version}\nLatest Version: {latest_version}\n\nYou are up-to-date!"
+            )
+            return None
     except (requests.RequestException, ValueError) as e:
         messagebox.showerror("Error", f"Failed to check for updates: {e}")
         return None

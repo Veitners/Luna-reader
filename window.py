@@ -4,7 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
-
 def create_plot_window(self, start, end, valid_indices):
     """Creates a new plot window for the specified range of distances and deformation values."""
     # Create a new window for the plot

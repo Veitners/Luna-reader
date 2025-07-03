@@ -11,8 +11,15 @@ import processing as util
 import plotter as plot
 import window
 import player
+import autoupdate
+import os
 
+repo_url = "https://github.com/Veitners/Luna-reader"
+current_version = "0.0.1"  # Replace with your current version
 
+def check_for_updates():
+    """Checks for updates and prompts the user."""
+    autoupdate.check_for_update(repo_url, current_version)
 
 class DeformationApp:
     """Main application class for viewing"""
@@ -276,6 +283,13 @@ class DeformationApp:
             command=lambda: plot.reset_yaxis_limits(self)
         )
         self.reset_yaxis_button.pack(side=tk.LEFT, padx=5)
+
+        # Add a button to check for updates
+        self.update_button = tk.Button(
+            self.load_frame, text="Check for Updates",
+            command=check_for_updates
+        )
+        self.update_button.pack(side=tk.LEFT, padx=5)
 
     def show_loading_window(self, message):
         """Displays a loading window with a progress bar."""

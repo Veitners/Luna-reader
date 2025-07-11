@@ -64,142 +64,13 @@ def plot_deformation(self):
     self.ax.set_yticks(self.ax.get_yticks()[::max(1, len(self.ax.get_yticks()) // 10)])
 
     self.ax.legend()  # Add legend to distinguish lines
-    self.canvas.draw()
-
-
-def plot_point(self, csv_file_path):
-    """Plots points from a CSV file against deformation values for the current timestamp."""
     try:
-        # Load the CSV file starting from row 2
-        points_df = pd.read_csv(csv_file_path, skiprows=1)
-        required_columns = [
-            "Point Number",
-            "X Coordinate",
-            "Y Coordinate"
-        ]
-        if not all(col in points_df.columns for col in required_columns):
-            missing_columns = [
-                col for col in required_columns if col not in points_df.columns
-            ]
-            actual_columns = ", ".join(points_df.columns)
-            messagebox.showerror(
-                "Error",
-                "CSV file must contain the following columns: "
-                f"{', '.join(required_columns)}.\n"
-                f"Missing columns: {', '.join(missing_columns)}.\n"
-                f"Actual columns in the file: {actual_columns}."
-            )
-            return
-
-        deformation_values = self.data[self.current_timestamp_idx]
-        valid_indices = (~pd.isna(deformation_values)) & (~pd.isna(self.distances)) & \
-                        (~np.isinf(deformation_values)) & (~np.isinf(self.distances))
-        deformation_values = deformation_values[valid_indices]
-
-        # Ensure the number of deformation values matches the number of points
-        if len(deformation_values) < len(points_df):
-            deformation_values = np.append(
-                deformation_values,
-                [0] * (len(points_df) - len(deformation_values))
-            )
-
-        # Sort points and deformation values by deformation values to plot higher values last
-        sorted_data = sorted(
-            zip(
-                deformation_values,
-                points_df["X Coordinate"],
-                points_df["Y Coordinate"]
-            ),
-            key=lambda x: x[0]
-        )
-        deformation_values, x_coords, y_coords = zip(*sorted_data)
-
-        # Check if the plot window already exists
-        if not hasattr(self, "plot_window") or not self.plot_window.winfo_exists():
-            # Create a new window for the plot
-            self.plot_window = tk.Toplevel(self.master)
-            self.plot_window.title(
-                f"Point Plot at Timestamp Index {self.current_timestamp_idx}"
-            )
-
-            # Center the new window relative to the original window
-            self.center_window(self.plot_window)
-
-            # Create a figure and canvas for the plot
-            self.figure, self.ax = plt.subplots(
-                figsize=(10, 6)
-            )
-            self.canvas = FigureCanvasTkAgg(
-                self.figure,
-                master=self.plot_window
-            )
-            self.canvas.get_tk_widget().pack(
-                fill=tk.BOTH,
-                expand=True
-            )
-
-            # Add Matplotlib's navigation toolbar for zoom and pan
-            toolbar_frame = tk.Frame(self.plot_window)
-            toolbar_frame.pack(fill=tk.X, pady=5)
-            toolbar = NavigationToolbar2Tk(
-                self.canvas,
-                toolbar_frame
-            )
-            toolbar.update()
-
-            # Add buttons for adjusting the timestamp index
-            control_frame = tk.Frame(self.plot_window)
-            control_frame.pack(fill=tk.X, pady=5)
-
-            tk.Button(
-                control_frame,
-                text="Previous",
-                command=lambda: self.update_timestamp_plot(step=-1)
-            ).pack(side=tk.LEFT, padx=5)
-            tk.Button(
-                control_frame,
-                text="Next",
-                command=lambda: self.update_timestamp_plot(step=1)
-            ).pack(side=tk.LEFT, padx=5)
-
-        # Clear the previous plot
-        self.ax.clear()
-
-        # Plot the points with colors corresponding to deformation values
-        # Create the scatter plot
-        scatter = self.ax.scatter(
-            x_coords,
-            y_coords,
-            c=deformation_values,
-            cmap="viridis",
-            s=50
-        )
-
-        self.ax.set_title(
-            f"Point Plot at Timestamp Index {self.current_timestamp_idx}"
-        )
-        self.ax.set_xlabel("X Coordinate")
-        self.ax.set_ylabel("Y Coordinate")
-        self.ax.set_aspect('equal')  # Lock the aspect ratio to 1:1
-
-        # Remove any existing colorbars before adding a new one
-        if hasattr(self, "colorbar") and self.colorbar:
-            self.colorbar.remove()
-        self.colorbar = self.figure.colorbar(
-            scatter,
-            ax=self.ax,
-            label="Deformation Value"
-        )
-
         self.canvas.draw()
-
-    except ValueError as e:
+    except tk.TclError as e:
         messagebox.showerror(
-            "Error",
-            f"Failed to plot points: {e}"
+            "Canvas Update Error",
+            f"Failed to update the canvas due to a Tkinter error: {str(e)}. This might occur if the window is closed or the canvas is not properly initialized."
         )
-
-
 def lock_line(self):
     """Locks the current line of deformation values and distances for later reference."""
     if self.data is None:
@@ -225,16 +96,12 @@ def lock_line(self):
             "line_style": line_style
         })
         self.plot_deformation(self)
-
-
 def reset_graph(self):
     """Resets the graph to its original state, clearing locked lines and zeroing."""
     self.locked_lines.clear()
     self.zeroing_enabled = False
     self.data = self.original_data.copy()
     self.plot_deformation(self)
-
-
 def on_hover(self, event):
     """Handles mouse hover events to show tooltips for the closest point on the plot."""	
     if event.inaxes != self.ax or not hasattr(self, "current_plot_data"):
@@ -266,10 +133,92 @@ def on_hover(self, event):
             arrowprops=dict(arrowstyle="->")
         )
         self.canvas.draw_idle()
-
-
 def reset_yaxis_limits(self):
     """Reset y-axis min/max entry fields and replot."""
     self.ymin_var.set("")
     self.ymax_var.set("")
     self.plot_deformation(self)
+def plot_spatial_layout(self):
+    """Plots the spatial layout of points with deformation values as colors."""
+    if self.data is None or self.distances is None:
+        messagebox.showerror("Error", "No deformation data or coordinates loaded.")
+        return
+
+    try:
+        # Load the real-world coordinates from the CSV file
+        points_df = pd.read_csv(self.csv_file_path, skiprows=1)
+        x_coords = points_df["X Coordinate"].values
+        y_coords = points_df["Y Coordinate"].values
+
+        num_points = len(x_coords)
+        num_deformations = self.data.shape[1]
+
+        if num_deformations > num_points:
+            # Truncate deformation data to match number of points
+            self.data = self.data[:, :num_points]
+        elif num_points > num_deformations:
+            # Pad deformation data with zeros to match number of points
+            pad_width = num_points - num_deformations
+            self.data = np.pad(self.data, ((0, 0), (0, pad_width)), mode='constant', constant_values=0)
+
+        # Create a new window for the plot
+        if not hasattr(self, "plot_window") or self.plot_window is None or not self.plot_window.winfo_exists():
+            self.plot_window = tk.Toplevel(self.master)
+            self.plot_window.title("Spatial Layout of Deformation")
+            self.center_window(self.plot_window)
+
+            self.figure = plt.Figure(figsize=(10, 6))
+            self.ax = self.figure.add_subplot(111)
+            self.canvas = FigureCanvasTkAgg(self.figure, master=self.plot_window)
+            self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+            toolbar_frame = tk.Frame(self.plot_window)
+            toolbar_frame.pack(fill=tk.X, pady=5)
+            toolbar = NavigationToolbar2Tk(self.canvas, toolbar_frame)
+            toolbar.update()
+
+        # Plot the initial scatterplot
+        deformation_values = self.data[self.current_timestamp_idx]
+        sorted_indices = np.argsort(deformation_values)
+        x_coords = x_coords[sorted_indices]
+        y_coords = y_coords[sorted_indices]
+        deformation_values = deformation_values[sorted_indices]
+
+        # Increase point size for better visibility
+        scatter = self.ax.scatter(
+            x_coords, y_coords, c=deformation_values, cmap="viridis", s=50
+        )
+        self.colorbar = self.figure.colorbar(scatter, ax=self.ax)
+        self.ax.set_title(f"Deformation at Timestamp: {self.timestamps[self.current_timestamp_idx]}")
+        self.ax.set_xlabel("X Coordinate")
+        self.ax.set_ylabel("Y Coordinate")
+
+        # Update the plot dynamically with the slider
+        def update_plot(timestamp_idx):
+            timestamp_idx = int(timestamp_idx)
+            self.current_timestamp_idx = timestamp_idx
+            deformation_values = self.data[timestamp_idx]
+
+            # Adjust deformation values and coordinates for mismatches
+            num_points = len(x_coords)
+            num_deformations = len(deformation_values)
+
+            if num_points > num_deformations:
+                deformation_values = np.pad(deformation_values, (0, num_points - num_deformations), constant_values=0)
+            elif num_deformations > num_points:
+                deformation_values = deformation_values[:num_points]
+
+            scatter.set_array(deformation_values)
+            self.ax.set_title(f"Deformation at Timestamp: {self.timestamps[timestamp_idx]}")
+            self.canvas.draw()
+
+        slider_frame = tk.Frame(self.plot_window)
+        slider_frame.pack(fill=tk.X, pady=5)
+        slider = tk.Scale(
+            slider_frame, from_=0, to=len(self.timestamps) - 1, orient=tk.HORIZONTAL,
+            command=update_plot, length=500
+        )
+        slider.pack()
+
+    except Exception as e:
+        messagebox.showerror("Error", f"An error occurred while plotting: {e}")

@@ -59,7 +59,6 @@ def update_timestamp_plot(self, csv_file_path, step):
             self.current_timestamp_idx = new_index
             if hasattr(self, "ax"):
                 self.ax.clear()  # Clear the previous plot
-            self.plot_point(csv_file_path)  # Re-plot with the updated index
     except pd.errors.ParserError as e:
         messagebox.showerror(
             "Error",

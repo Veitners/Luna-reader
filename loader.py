@@ -120,7 +120,7 @@ def load_file(app):
             app.data_text.config(state=tk.DISABLED)
     except (OSError, IOError) as e:
         messagebox.showerror("Error", f"Failed to read file: {e}")
-def load_csv_file(self):
+def load_csv_file(app):
     """Load CSV with point coordinates and plot them."""
     csv_file_path = filedialog.askopenfilename(
         filetypes=[("CSV Files", "*.csv")]
@@ -131,4 +131,5 @@ def load_csv_file(self):
             "No CSV file selected."
         )
         return
-    plot.plot_point(self, csv_file_path)
+    app.csv_file_path = csv_file_path
+    plot.plot_spatial_layout(app)

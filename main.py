@@ -15,7 +15,7 @@ import autoupdate
 import os
 
 repo_url = "https://github.com/Veitners/Luna-reader"
-current_version = "0.0.5"  # Replace with your current version
+current_version = "0.0.4"  # Replace with your current version
 
 def check_for_updates():
     """Checks for updates and prompts the user."""
@@ -58,7 +58,7 @@ class DeformationApp:
         # Button to load the CSV file
         self.load_csv_button = tk.Button(
             self.load_frame, text="Load XY CSV",
-            command=load.load_csv_file
+            command=lambda: [load.load_csv_file(self)]
         )
         self.load_csv_button.pack(side=tk.LEFT, padx=5)
         # Label to display the loaded file name
@@ -293,6 +293,9 @@ class DeformationApp:
         )
         self.update_button.pack(side=tk.LEFT, padx=5)
 
+        # Initialize csv_file_path attribute to avoid attribute errors
+        self.csv_file_path = None
+
     def show_loading_window(self, message):
         """Displays a loading window with a progress bar."""
         loading_window = tk.Toplevel(self.master)
@@ -425,6 +428,29 @@ class DeformationApp:
                 "Playback Error",
                 f"An error occurred during playback: {e}"
             )
+
+    def _update_plot(self, *args):
+        """Updates the plot based on the slider's timestamp index."""
+        if self.data is None or self.timestamps is None:
+            messagebox.showerror("Error", "No data loaded for plotting.")
+            return
+
+        try:
+            # Extract timestamp index from args
+            timestamp_idx = int(args[0]) if args else self.current_timestamp_idx
+
+            # Ensure timestamp index is valid
+            if timestamp_idx < 0 or timestamp_idx >= len(self.timestamps):
+                raise ValueError("Invalid timestamp index.")
+
+            self.current_timestamp_idx = timestamp_idx
+
+            # Removed plot_point functionality
+
+            # Update statistics
+            self.update_stats()
+        except Exception as e:
+            messagebox.showerror("Plot Update Error", f"An error occurred while updating the plot: {e}")
 
 
 if __name__ == "__main__":
